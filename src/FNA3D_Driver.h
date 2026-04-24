@@ -422,6 +422,14 @@ struct FNA3D_Device
 		FNA3D_RenderTargetBinding *target
 	);
 
+	/* Depth Resolve Extension */
+
+	void (*ResolveDepthEXT)(
+		FNA3D_Renderer *driverData,
+		FNA3D_Renderbuffer *renderbuffer,
+		FNA3D_Texture *texture
+	);
+
 	/* Backbuffer Functions */
 
 	void (*ResetBackbuffer)(
@@ -765,6 +773,7 @@ struct FNA3D_Device
 	ASSIGN_DRIVER_FUNC(ApplyVertexBufferBindings, name) \
 	ASSIGN_DRIVER_FUNC(SetRenderTargets, name) \
 	ASSIGN_DRIVER_FUNC(ResolveTarget, name) \
+	ASSIGN_DRIVER_FUNC(ResolveDepthEXT, name) \
 	ASSIGN_DRIVER_FUNC(ResetBackbuffer, name) \
 	ASSIGN_DRIVER_FUNC(ReadBackbuffer, name) \
 	ASSIGN_DRIVER_FUNC(GetBackbufferSize, name) \

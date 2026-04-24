@@ -818,6 +818,27 @@ FNA3DAPI void FNA3D_ResolveTarget(
 	FNA3D_RenderTargetBinding *target
 );
 
+/* Depth Resolve Extension */
+
+/* Resolves a depth renderbuffer to a texture.
+ *
+ * device:	The FNA3D_Device.
+ * renderbuffer:	The depth renderbuffer to resolve.
+ * texture:	The destination texture to resolve to, with compatible format:
+ *			- D16	-> USHORT_EXT (R16_UNORM)
+ *			- D24	-> SINGLE (R32_FLOAT)
+ *			- D24S8	-> SINGLE (R32_FLOAT, no stencil)
+ *
+ * For MSAA depth buffers, this performs the resolve blit.
+ * The destination texture should match the dimensions of the renderbuffer.
+ * Note: Stencil data is discarded by this operation.
+ */
+FNA3DAPI void FNA3D_ResolveDepthEXT(
+	FNA3D_Device *device,
+	FNA3D_Renderbuffer *renderbuffer,
+	FNA3D_Texture *texture
+);
+
 /* Backbuffer Functions */
 
 /* After modifying the OS window state, call this to reset the backbuffer to

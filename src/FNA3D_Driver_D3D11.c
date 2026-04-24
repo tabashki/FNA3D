@@ -2556,6 +2556,28 @@ static void D3D11_ResolveTarget(
 	SDL_UnlockMutex(renderer->ctxLock);
 }
 
+static void D3D11_ResolveDepthEXT(
+	FNA3D_Renderer *driverData,
+	FNA3D_Renderbuffer *renderbuffer,
+	FNA3D_Texture *texture
+) {
+	D3D11Renderer *renderer = (D3D11Renderer*) driverData;
+	D3D11Renderbuffer *depthBuffer = (D3D11Renderbuffer*) renderbuffer;
+	D3D11Texture *depthTex = (D3D11Texture*) texture;
+
+	SDL_LockMutex(renderer->ctxLock);
+
+	ID3D11DeviceContext_CopySubresourceRegion(
+		renderer->context,
+		(ID3D11Resource*) depthTex->handle,
+		0, 0, 0, 0,
+		(ID3D11Resource*) depthBuffer->handle,
+		0, NULL
+	);
+
+	SDL_UnlockMutex(renderer->ctxLock);
+}
+
 /* Backbuffer Functions */
 
 static void D3D11_INTERNAL_CreateSwapChain(

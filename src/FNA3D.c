@@ -574,6 +574,18 @@ void FNA3D_ResolveTarget(
 	device->ResolveTarget(device->driverData, target);
 }
 
+void FNA3D_ResolveDepthEXT(
+	FNA3D_Device *device,
+	FNA3D_Renderbuffer *renderbuffer,
+	FNA3D_Texture *texture
+) {
+	if (device == NULL || renderbuffer == NULL || texture == NULL)
+	{
+		return;
+	}
+	device->ResolveDepthEXT(device->driverData, renderbuffer, texture);
+}
+
 /* Backbuffer Functions */
 
 void FNA3D_ResetBackbuffer(

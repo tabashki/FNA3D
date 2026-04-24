@@ -635,6 +635,7 @@ struct FNA3D_Command
 	#define FNA3D_COMMAND_GETTEXTUREDATACUBE 16
 	#define FNA3D_COMMAND_GENCOLORRENDERBUFFER 17
 	#define FNA3D_COMMAND_GENDEPTHRENDERBUFFER 18
+	#define FNA3D_COMMAND_RESOLVEDEPTHEXT 19
 	uint8_t type;
 	FNA3DNAMELESS union
 	{
@@ -832,6 +833,12 @@ struct FNA3D_Command
 			int32_t multiSampleCount;
 			FNA3D_Renderbuffer *retval;
 		} genDepthStencilRenderbuffer;
+
+		struct
+		{
+			FNA3D_Renderbuffer *renderbuffer;
+			FNA3D_Texture *texture;
+		} resolveDepthEXT;
 	};
 	SDL_Semaphore *semaphore;
 	FNA3D_Command *next;
@@ -1048,6 +1055,13 @@ static void FNA3D_ExecuteCommand(
 				cmd->genDepthStencilRenderbuffer.height,
 				cmd->genDepthStencilRenderbuffer.format,
 				cmd->genDepthStencilRenderbuffer.multiSampleCount
+			);
+			break;
+		case FNA3D_COMMAND_RESOLVEDEPTHEXT:
+			device->ResolveDepthEXT(
+				device->driverData,
+				cmd->resolveDepthEXT.renderbuffer,
+				cmd->resolveDepthEXT.texture
 			);
 			break;
 		default:
@@ -2861,6 +2875,20 @@ static void OPENGL_ResolveTarget(
 		renderer->glGenerateMipmap(textureTarget);
 		BindTexture(renderer, prevTex);
 	}
+}
+
+static void OPENGL_ResolveDepthEXT(
+	FNA3D_Renderer *driverData,
+	FNA3D_Renderbuffer *renderbuffer,
+	FNA3D_Texture *texture
+) {
+	OpenGLRenderer *renderer = (OpenGLRenderer*) driverData;
+	OpenGLRenderbuffer *depthBuffer = (OpenGLRenderbuffer*) renderbuffer;
+	OpenGLTexture *depthTex = (OpenGLTexture*) texture;
+
+	// TODO: Figure this out for OpenGL
+	FNA3D_LogError("Unimplemented: %s", __FUNCTION__);
+	return;
 }
 
 /* Backbuffer Functions */

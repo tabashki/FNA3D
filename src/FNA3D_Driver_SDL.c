@@ -1449,6 +1449,29 @@ static void SDLGPU_ResolveTarget(
 	SDL_GenerateMipmapsForGPUTexture(renderer->renderCommandBuffer, texture->texture);
 }
 
+static void SDLGPU_ResolveDepthEXT(
+	FNA3D_Renderer *driverData,
+	FNA3D_Renderbuffer *renderbuffer,
+	FNA3D_Texture *texture
+) {
+	SDLGPU_Renderer *renderer = (SDLGPU_Renderer*) driverData;
+	SDLGPU_Renderbuffer *depthBuffer = (SDLGPU_Renderbuffer*) renderbuffer;
+	SDLGPU_TextureHandle *depthTexture = (SDLGPU_TextureHandle*) texture;
+
+	SDL_GPUTextureLocation src;
+	SDL_GPUTextureLocation dst;
+	SDL_memset(&src, '\0', sizeof(SDL_GPUTextureLocation));
+	SDL_memset(&dst, '\0', sizeof(SDL_GPUTextureLocation));
+
+	src.texture = depthBuffer->textureHandle->texture;
+	dst.texture = depthTexture->texture;
+
+	SDL_GPUCopyPass *pass = SDL_BeginGPUCopyPass(renderer->renderCommandBuffer);
+	SDL_CopyGPUTextureToTexture(&pass, &src, &dst,
+		depthTexture->createInfo.width, depthTexture->createInfo.height, 0, 0);
+	SDL_EndGPUCopyPass(pass);
+}
+
 static void SDLGPU_INTERNAL_GenerateVertexInputInfo(
 	SDLGPU_Renderer *renderer,
 	SDL_GPUVertexBufferDescription *bindings,
