@@ -1466,8 +1466,19 @@ static void SDLGPU_ResolveDepthEXT(
 	src.texture = depthBuffer->textureHandle->texture;
 	dst.texture = depthTexture->texture;
 
+	if (renderer->renderPass != NULL)
+	{
+		SDLGPU_INTERNAL_EndRenderPass(renderer);
+	}
+	if (renderer->copyPass != NULL)
+	{
+		SDLGPU_INTERNAL_EndCopyPass(renderer);
+	}
+
+	// Intentionally avoiding `SDLGPU_INTERNAL_BeginCopyPass` to make sure that
+	// this resolve happens on the render command buffer timeline.
 	SDL_GPUCopyPass *pass = SDL_BeginGPUCopyPass(renderer->renderCommandBuffer);
-	SDL_CopyGPUTextureToTexture(&pass, &src, &dst,
+	SDL_CopyGPUTextureToTexture(pass, &src, &dst,
 		depthTexture->createInfo.width, depthTexture->createInfo.height, 0, 0);
 	SDL_EndGPUCopyPass(pass);
 }
