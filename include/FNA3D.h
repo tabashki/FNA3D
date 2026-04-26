@@ -1163,6 +1163,7 @@ FNA3DAPI FNA3D_Renderbuffer* FNA3D_GenColorRenderbuffer(
  * height:		The height of the depth/stencil buffer.
  * format:		The storage format of the depth/stencil buffer.
  * multiSampleCount:	The MSAA value for the depth/stencil buffer.
+ * allowDepthSampling:	Allow sampling depth buffer as a texture
  *
  * Returns a depth/stencil FNA3D_Renderbuffer object.
  */
@@ -1171,7 +1172,15 @@ FNA3DAPI FNA3D_Renderbuffer* FNA3D_GenDepthStencilRenderbuffer(
 	int32_t width,
 	int32_t height,
 	FNA3D_DepthFormat format,
-	int32_t multiSampleCount
+	int32_t multiSampleCount,
+	uint8_t allowDepthSampling
+);
+
+/* TODO: Docuemnt this
+ */
+FNA3DAPI FNA3D_Texture* FNA3D_GetRenderbufferDepthTexture(
+	FNA3D_Device *device,
+	FNA3D_Renderbuffer* renderbuffer
 );
 
 /* Sends a renderbuffer to be destroyed by the renderer. Note that we call it

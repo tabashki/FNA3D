@@ -93,6 +93,7 @@ typedef struct D3D11Texture /* Cast FNA3D_Texture* to this! */
 	/* Basic Info */
 	int32_t levelCount;
 	uint8_t isRenderTarget;
+	uint8_t isDepthStencilTarget;
 	FNA3D_SurfaceFormat format;
 
 	/* Dimensions */
@@ -116,6 +117,10 @@ typedef struct D3D11Texture /* Cast FNA3D_Texture* to this! */
 			int32_t size;
 			ID3D11RenderTargetView **rtViews;
 		} cube;
+		struct
+		{
+			ID3D11DepthStencilView *dsView;
+		} depth;
 	};
 	ID3D11Resource *staging; /* ID3D11Texture2D or ID3D11Texture3D */
 } D3D11Texture;
@@ -124,10 +129,11 @@ static D3D11Texture NullTexture =
 {
 	NULL,
 	NULL,
-	1,
-	0,
+	1,	/* levelCount */
+	0,	/* isRenderTarget */
+	0,	/* isDepthStencilTarget */
 	FNA3D_SURFACEFORMAT_COLOR,
-	0,
+	0,	/* rtType */
 	{
 		{ 0, 0 }
 	},
@@ -342,6 +348,23 @@ static DXGI_FORMAT XNAToD3D_DepthFormat[] =
 	DXGI_FORMAT_D24_UNORM_S8_UINT,	/* DepthFormat.Depth24 */
 	DXGI_FORMAT_D24_UNORM_S8_UINT	/* DepthFormat.Depth24Stencil8 */
 };
+
+static DXGI_FORMAT XNAToD3D_TypelessDepthFormat[] =
+{
+	DXGI_FORMAT_UNKNOWN,		/* DepthFormat.None */
+	DXGI_FORMAT_R16_TYPELESS,	/* DepthFormat.Depth16 */
+	DXGI_FORMAT_R24G8_TYPELESS,	/* DepthFormat.Depth24 */
+	DXGI_FORMAT_R24G8_TYPELESS	/* DepthFormat.Depth24Stencil8 */
+};
+
+static DXGI_FORMAT XNAToD3D_DepthTextureFormat[] =
+{
+	DXGI_FORMAT_UNKNOWN,				/* DepthFormat.None */
+	DXGI_FORMAT_R16_UNORM,				/* DepthFormat.Depth16 */
+	DXGI_FORMAT_R24_UNORM_X8_TYPELESS,	/* DepthFormat.Depth24 */
+	DXGI_FORMAT_R24_UNORM_X8_TYPELESS	/* DepthFormat.Depth24Stencil8 */
+};
+
 
 static LPCSTR XNAToD3D_VertexAttribSemanticName[] =
 {
@@ -2282,11 +2305,16 @@ static void D3D11_INTERNAL_DiscardTargetTextures(
 		for (j = 0; j < MAX_TOTAL_SAMPLERS; j += 1)
 		{
 			const D3D11Texture *texture = renderer->textures[j];
-			if (!texture->isRenderTarget)
+			if (texture->isDepthStencilTarget)
+			{
+				// TODO: Find a way to avoid this redundant check for multiple RTVs
+				bound = (texture->depth.dsView == renderer->depthStencilView);
+			}
+			else if (!texture->isRenderTarget)
 			{
 				continue;
 			}
-			if (texture->rtType == FNA3D_RENDERTARGET_TYPE_2D)
+			else if (texture->rtType == FNA3D_RENDERTARGET_TYPE_2D)
 			{
 				bound = (texture->twod.rtView == view);
 			}
@@ -2353,11 +2381,16 @@ static void D3D11_INTERNAL_RestoreTargetTextures(D3D11Renderer *renderer)
 		for (j = 0; j < MAX_TOTAL_SAMPLERS; j += 1)
 		{
 			const D3D11Texture *texture = renderer->textures[j];
-			if (!texture->isRenderTarget)
+			if (texture->isDepthStencilTarget)
+			{
+				// Only restore this Depth Texture if is not the currently bound DSV
+				bound = (texture->depth.dsView != renderer->depthStencilView);
+			}
+			else if (!texture->isRenderTarget)
 			{
 				continue;
 			}
-			if (texture->rtType == FNA3D_RENDERTARGET_TYPE_2D)
+			else if (texture->rtType == FNA3D_RENDERTARGET_TYPE_2D)
 			{
 				bound = (texture->twod.rtView == view);
 			}
@@ -3457,6 +3490,7 @@ static FNA3D_Texture* D3D11_CreateTexture3D(
 	result->handle = (ID3D11Resource*) texture;
 	result->levelCount = levelCount;
 	result->isRenderTarget = 0;
+	result->isDepthStencilTarget = 0;
 	result->format = format;
 	result->threed.width = width;
 	result->threed.height = height;
@@ -3524,6 +3558,7 @@ static FNA3D_Texture* D3D11_CreateTextureCube(
 	result->handle = (ID3D11Resource*) texture;
 	result->levelCount = levelCount;
 	result->isRenderTarget = isRenderTarget;
+	result->isDepthStencilTarget = 0;
 	result->format = format;
 	result->cube.size = size;
 
@@ -4158,7 +4193,8 @@ static FNA3D_Renderbuffer* D3D11_GenDepthStencilRenderbuffer(
 	int32_t width,
 	int32_t height,
 	FNA3D_DepthFormat format,
-	int32_t multiSampleCount
+	int32_t multiSampleCount,
+	uint8_t allowDepthSampling
 ) {
 	D3D11Renderer *renderer = (D3D11Renderer*) driverData;
 	D3D11_TEXTURE2D_DESC desc;
@@ -4177,13 +4213,18 @@ static FNA3D_Renderbuffer* D3D11_GenDepthStencilRenderbuffer(
 	desc.Height = height;
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
-	desc.Format = XNAToD3D_DepthFormat[format];
+
+	// D3D11 validation fails if using D16_UNORM when enabling BIND_SHADER_RESOURCE,
+	// need to instead create a TYPELESS format texture and then a typed DSV
+	desc.Format = XNAToD3D_TypelessDepthFormat[format];
+
 	desc.SampleDesc.Count = (multiSampleCount > 1 ? multiSampleCount : 1);
 	desc.SampleDesc.Quality = (
 		multiSampleCount > 1 ? D3D11_STANDARD_MULTISAMPLE_PATTERN : 0
 	);
 	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL |
+		(allowDepthSampling ? D3D11_BIND_SHADER_RESOURCE : 0);
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = 0;
 
@@ -4195,16 +4236,66 @@ static FNA3D_Renderbuffer* D3D11_GenDepthStencilRenderbuffer(
 	);
 	ERROR_CHECK_RETURN("Depth-stencil renderbuffer creation failed", NULL)
 
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+	depthStencilViewDesc.Format = XNAToD3D_DepthFormat[format];
+	// TODO: Implement this for multi-sampling
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthStencilViewDesc.Flags = 0;
+	depthStencilViewDesc.Texture2D.MipSlice = 0;
+
 	/* Create the render target view */
 	res = ID3D11Device_CreateDepthStencilView(
 		renderer->device,
 		(ID3D11Resource*) result->handle,
-		NULL,
+		&depthStencilViewDesc,
 		&result->depth.dsView
 	);
 	ERROR_CHECK_RETURN("Depth-stencil renderbuffer RT view creation failed", NULL)
 
 	return (FNA3D_Renderbuffer*) result;
+}
+
+static FNA3D_Texture* D3D11_GetRenderbufferDepthTexture(
+	FNA3D_Renderer *driverData,
+	FNA3D_Renderbuffer* renderbuffer
+) {
+	D3D11Renderer *renderer = (D3D11Renderer*) driverData;
+	D3D11Renderbuffer *d3dRenderBuffer = (D3D11Renderbuffer*) renderbuffer;
+	if (d3dRenderBuffer->type != RENDERBUFFER_DEPTH)
+	{
+		FNA3D_LogError("Trying to get Depth Texture for a non-Depth Buffer");
+		return NULL;
+	}
+
+	D3D11Texture* result = (D3D11Texture*) SDL_malloc(sizeof(D3D11Texture));
+	SDL_memset(result, '\0', sizeof(D3D11Texture));
+	result->handle = d3dRenderBuffer->handle;
+
+	// TODO: Is this worth yet another lookup table?
+	result->format = (d3dRenderBuffer->depth.format == FNA3D_DEPTHFORMAT_D16 ?
+		FNA3D_SURFACEFORMAT_USHORT_EXT : FNA3D_SURFACEFORMAT_SINGLE);
+
+	result->rtType = FNA3D_RENDERTARGET_TYPE_2D;
+	result->levelCount = 1;
+	result->isDepthStencilTarget = 1;
+	result->depth.dsView = d3dRenderBuffer->depth.dsView;
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderViewDesc;
+	shaderViewDesc.Format = XNAToD3D_DepthTextureFormat[d3dRenderBuffer->depth.format];
+	shaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderViewDesc.Texture2D.MipLevels = 1;
+	shaderViewDesc.Texture2D.MostDetailedMip = 0;
+
+	/* Create the shader resource view for the Depth Texture */
+	HRESULT res = ID3D11Device_CreateShaderResourceView(
+		renderer->device,
+		result->handle,
+		&shaderViewDesc,
+		&result->shaderView
+	);
+	ERROR_CHECK_RETURN("Texture2D shader view creation failed", NULL)
+
+	return (FNA3D_Texture*) result;
 }
 
 static void D3D11_AddDisposeRenderbuffer(

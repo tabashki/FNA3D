@@ -1006,7 +1006,8 @@ FNA3D_Renderbuffer* FNA3D_GenDepthStencilRenderbuffer(
 	int32_t width,
 	int32_t height,
 	FNA3D_DepthFormat format,
-	int32_t multiSampleCount
+	int32_t multiSampleCount,
+	uint8_t allowDepthSampling
 ) {
 	/* We're stuck tracing _after_ the call instead of _before_, because
 	 * of threading issues. This can cause timing issues!
@@ -1021,10 +1022,24 @@ FNA3D_Renderbuffer* FNA3D_GenDepthStencilRenderbuffer(
 		width,
 		height,
 		format,
-		multiSampleCount
+		multiSampleCount,
+		allowDepthSampling
 	);
 	TRACE_GENDEPTHSTENCILRENDERBUFFER
 	return result;
+}
+
+FNA3D_Texture* FNA3D_GetRenderbufferDepthTexture(
+	FNA3D_Device *device,
+	FNA3D_Renderbuffer* renderbuffer
+) {
+	if (device == NULL || renderbuffer == NULL)
+	{
+		return NULL;
+	}
+	return device->GetRenderbufferDepthTexture(
+		device->driverData, renderbuffer
+	);
 }
 
 void FNA3D_AddDisposeRenderbuffer(

@@ -1150,6 +1150,7 @@ void FNA3D_Trace_GenDepthStencilRenderbuffer(
 	int32_t height,
 	FNA3D_DepthFormat format,
 	int32_t multiSampleCount,
+	uint8_t allowDepthSampling,
 	FNA3D_Renderbuffer *retval
 ) {
 	if (!traceEnabled)
@@ -1163,6 +1164,7 @@ void FNA3D_Trace_GenDepthStencilRenderbuffer(
 	WRITE(height);
 	WRITE(format);
 	WRITE(multiSampleCount);
+	WRITE(allowDpethSampling);
 	SDL_UnlockMutex(traceLock);
 }
 

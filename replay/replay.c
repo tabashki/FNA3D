@@ -251,6 +251,7 @@ static uint8_t replay(
 
 	/* Gen*Renderbuffer */
 	int32_t multiSampleCount;
+	uint8_t allowDepthSampling;
 
 	/* *BufferData */
 	int32_t offsetInBytes;
@@ -1070,12 +1071,14 @@ static uint8_t replay(
 			READ(h);
 			READ(depthFormat);
 			READ(multiSampleCount);
+			READ(allowDepthSampling);
 			renderbuffer = FNA3D_GenDepthStencilRenderbuffer(
 				device,
 				w,
 				h,
 				depthFormat,
-				multiSampleCount
+				multiSampleCount,
+				allowDepthSampling
 			);
 			REGISTER_OBJECT(Renderbuffer, Renderbuffer, renderbuffer)
 			break;
@@ -1087,6 +1090,7 @@ static uint8_t replay(
 			);
 			traceRenderbuffer[i] = NULL;
 			break;
+		// TODO: Version of this for GetRenderbufferDepthTexture
 		case MARK_GENVERTEXBUFFER:
 			READ(dynamic);
 			READ(usage);

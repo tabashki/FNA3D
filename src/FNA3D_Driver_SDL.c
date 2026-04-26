@@ -2954,11 +2954,15 @@ static FNA3D_Renderbuffer* SDLGPU_GenDepthStencilRenderbuffer(
 	int32_t width,
 	int32_t height,
 	FNA3D_DepthFormat format,
-	int32_t multiSampleCount
+	int32_t multiSampleCount,
+	uint8_t allowDepthSampling
 ) {
 	SDLGPU_Renderer *renderer = (SDLGPU_Renderer*) driverData;
 	SDLGPU_TextureHandle *textureHandle;
 	SDLGPU_Renderbuffer *renderbuffer;
+
+	SDL_GPUTextureUsageFlags flags = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+	flags |= (allowDepthSampling ? SDL_GPU_TEXTUREUSAGE_SAMPLER : 0);
 
 	textureHandle = SDLGPU_INTERNAL_CreateTextureWithHandle(
 		renderer,
@@ -2968,7 +2972,7 @@ static FNA3D_Renderbuffer* SDLGPU_GenDepthStencilRenderbuffer(
 		XNAToSDL_DepthFormat(renderer, format),
 		1,
 		1,
-		SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+		flags,
 		XNAToSDL_SampleCount(multiSampleCount)
 	);
 
@@ -2984,6 +2988,14 @@ static FNA3D_Renderbuffer* SDLGPU_GenDepthStencilRenderbuffer(
 	renderbuffer->format = XNAToSDL_DepthFormat(renderer, format);
 
 	return (FNA3D_Renderbuffer*) renderbuffer;
+}
+
+static FNA3D_Texture* SDLGPU_GetRenderbufferDepthTexture(
+	FNA3D_Renderer *driverData,
+	FNA3D_Renderbuffer* renderbuffer
+) {
+	SDLGPU_Renderbuffer *renderbufferHandle = (SDLGPU_Renderbuffer*) renderbuffer;
+	return (FNA3D_Texture*) renderbufferHandle->textureHandle;
 }
 
 static void SDLGPU_AddDisposeTexture(

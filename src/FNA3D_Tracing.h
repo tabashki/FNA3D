@@ -269,6 +269,7 @@ void FNA3D_Trace_GenDepthStencilRenderbuffer(
 	int32_t height,
 	FNA3D_DepthFormat format,
 	int32_t multiSampleCount,
+	uint8_t allowDepthSampling,
 	FNA3D_Renderbuffer *retval
 );
 
@@ -415,7 +416,7 @@ void FNA3D_Trace_SetTextureName(void *texture, const char *text);
 #define TRACE_GETTEXTUREDATA3D FNA3D_Trace_GetTextureData3D(texture, x, y, z, w, h, d, level, dataLength);
 #define TRACE_GETTEXTUREDATACUBE FNA3D_Trace_GetTextureDataCube(texture, x, y, w, h, cubeMapFace, level, dataLength);
 #define TRACE_GENCOLORRENDERBUFFER FNA3D_Trace_GenColorRenderbuffer(width, height, format, multiSampleCount, texture, result);
-#define TRACE_GENDEPTHSTENCILRENDERBUFFER FNA3D_Trace_GenDepthStencilRenderbuffer(width, height, format, multiSampleCount, result);
+#define TRACE_GENDEPTHSTENCILRENDERBUFFER FNA3D_Trace_GenDepthStencilRenderbuffer(width, height, format, multiSampleCount, allowDepthSampling, result);
 #define TRACE_ADDDISPOSERENDERBUFFER FNA3D_Trace_AddDisposeRenderbuffer(renderbuffer);
 #define TRACE_GENVERTEXBUFFER FNA3D_Trace_GenVertexBuffer(dynamic, usage, sizeInBytes, result);
 #define TRACE_ADDDISPOSEVERTEXBUFFER FNA3D_Trace_AddDisposeVertexBuffer(buffer);

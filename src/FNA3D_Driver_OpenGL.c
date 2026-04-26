@@ -830,8 +830,15 @@ struct FNA3D_Command
 			int32_t height;
 			FNA3D_DepthFormat format;
 			int32_t multiSampleCount;
+			uint8_t allowDepthSampling;
 			FNA3D_Renderbuffer *retval;
 		} genDepthStencilRenderbuffer;
+
+		struct
+		{
+			FNA3D_Renderbuffer* renderbuffer;
+			FNA3D_Texture *retval;
+		} getRenderbufferDepthTexture;
 	};
 	SDL_Semaphore *semaphore;
 	FNA3D_Command *next;
@@ -1047,9 +1054,11 @@ static void FNA3D_ExecuteCommand(
 				cmd->genDepthStencilRenderbuffer.width,
 				cmd->genDepthStencilRenderbuffer.height,
 				cmd->genDepthStencilRenderbuffer.format,
-				cmd->genDepthStencilRenderbuffer.multiSampleCount
+				cmd->genDepthStencilRenderbuffer.multiSampleCount,
+				cmd->genDepthStencilRenderbuffer.allowDepthSampling
 			);
 			break;
+		// TODO: Version of this for GetRenderbufferDepthTexture
 		default:
 			FNA3D_LogError(
 				"Cannot execute unknown command (value = %d)",
@@ -4433,7 +4442,8 @@ static FNA3D_Renderbuffer* OPENGL_GenDepthStencilRenderbuffer(
 	int32_t width,
 	int32_t height,
 	FNA3D_DepthFormat format,
-	int32_t multiSampleCount
+	int32_t multiSampleCount,
+	uint8_t allowDepthSampling
 ) {
 	OpenGLRenderer *renderer = (OpenGLRenderer*) driverData;
 	OpenGLRenderbuffer *renderbuffer;
@@ -4446,6 +4456,7 @@ static FNA3D_Renderbuffer* OPENGL_GenDepthStencilRenderbuffer(
 		cmd.genDepthStencilRenderbuffer.height = height;
 		cmd.genDepthStencilRenderbuffer.format = format;
 		cmd.genDepthStencilRenderbuffer.multiSampleCount = multiSampleCount;
+		cmd.genDepthStencilRenderbuffer.allowDepthSampling = allowDepthSampling;
 		ForceToMainThread(renderer, &cmd);
 		return cmd.genDepthStencilRenderbuffer.retval;
 	}
@@ -4479,6 +4490,14 @@ static FNA3D_Renderbuffer* OPENGL_GenDepthStencilRenderbuffer(
 	renderer->glBindRenderbuffer(GL_RENDERBUFFER, renderer->realBackbufferRBO);
 
 	return (FNA3D_Renderbuffer*) renderbuffer;
+}
+
+static FNA3D_Texture* OPENGL_GetRenderbufferDepthTexture(
+	FNA3D_Renderer *driverData,
+	FNA3D_Renderbuffer* renderbuffer
+) {
+	// TODO: Implement this
+	return NULL;
 }
 
 static void OPENGL_INTERNAL_DestroyRenderbuffer(
